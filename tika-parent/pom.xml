@@ -391,7 +391,7 @@
     <junit6.version>6.1.3</junit6.version>
     <juniversalchardet.version>2.5.0</juniversalchardet.version>
     <junrar.version>8.1.0</junrar.version>
-    <jwarc.version>0.36.0</jwarc.version>
+    <jwarc.version>0.37.0</jwarc.version>
     <kafka.version>4.3.1</kafka.version>
     <kotlin-stdlib.version>2.4.10</kotlin-stdlib.version>
     <libpst.version>0.9.3</libpst.version>
