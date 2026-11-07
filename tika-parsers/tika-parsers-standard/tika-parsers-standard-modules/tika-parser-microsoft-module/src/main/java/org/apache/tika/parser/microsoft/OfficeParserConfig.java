@@ -1,0 +1,305 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.tika.parser.microsoft;
+
+
+import java.io.Serializable;
+
+public class OfficeParserConfig implements Serializable {
+
+    private boolean extractMacros = false;
+
+    private boolean includeDeletedContent = false;
+    private boolean includeMoveFromContent = false;
+    private boolean includeShapeBasedContent = true;
+    private boolean includeHeadersAndFooters = true;
+    private boolean includeMissingRows = false;
+    private boolean includeSlideNotes = true;
+    private boolean includeSlideMasterContent = true;
+    private boolean concatenatePhoneticRuns = true;
+
+    private boolean preferAlternateContentChoice = true;
+
+    private boolean writeSelectHeadersInBody = false;
+
+    /**
+     * Maximum bytes per embedded object/pict when extracting from RTF within
+     * MSG files.  Since embedded data is streamed to disk (not held in memory),
+     * the default is 2 GB.  Set to -1 for unlimited.
+     */
+    private int rtfEmbeddedMaxBytesInKb = 2 * 1024 * 1024; // 2 GB
+
+    private boolean includeGlossary = true;
+    private String dateOverrideFormat = null;
+    private int maxOverride = 0;//ignore
+
+    /**
+     * @return whether or not to extract macros
+     */
+    public boolean isExtractMacros() {
+        return extractMacros;
+    }
+
+    /**
+     * Sets whether or not MSOffice parsers should extract macros.
+     * As of Tika 1.15, the default is <code>false</code>.
+     *
+     * @param extractMacros
+     */
+    public void setExtractMacros(boolean extractMacros) {
+        this.extractMacros = extractMacros;
+    }
+
+    public boolean isIncludeDeletedContent() {
+        return includeDeletedContent;
+    }
+
+    /**
+     * Sets whether or not the parser should include deleted content.
+     * <p/>
+     * <b>This has only been implemented in the streaming docx parser
+     * ({@link org.apache.tika.parser.microsoft.ooxml.SXWPFWordExtractorDecorator} so far!!!</b>
+     *
+     * @param includeDeletedContent
+     */
+    public void setIncludeDeletedContent(boolean includeDeletedContent) {
+        this.includeDeletedContent = includeDeletedContent;
+    }
+
+    public boolean isIncludeMoveFromContent() {
+        return includeMoveFromContent;
+    }
+
+    /**
+     * With track changes on, when a section is moved, the content
+     * is stored in both the "moveFrom" section and in the "moveTo" section.
+     * <p/>
+     * If you'd like to include the section both in its original location (moveFrom)
+     * and in its new location (moveTo), set this to <code>true</code>
+     * <p/>
+     * Default: <code>false</code>
+     * <p/>
+     * <b>This has only been implemented in the streaming docx parser
+     * ({@link org.apache.tika.parser.microsoft.ooxml.SXWPFWordExtractorDecorator} so far!!!</b>
+     *
+     * @param includeMoveFromContent
+     */
+    public void setIncludeMoveFromContent(boolean includeMoveFromContent) {
+        this.includeMoveFromContent = includeMoveFromContent;
+    }
+
+    public boolean isIncludeShapeBasedContent() {
+        return includeShapeBasedContent;
+    }
+
+    /**
+     * In Excel and Word, there can be text stored within drawing shapes.
+     * (In PowerPoint everything is in a Shape)
+     * <p/>
+     * If you'd like to skip processing these to look for text, set this to
+     * <code>false</code>
+     * <p/>
+     * Default: <code>true</code>
+     *
+     * @param includeShapeBasedContent
+     */
+    public void setIncludeShapeBasedContent(boolean includeShapeBasedContent) {
+        this.includeShapeBasedContent = includeShapeBasedContent;
+    }
+
+    public boolean isIncludeHeadersAndFooters() {
+        return includeHeadersAndFooters;
+    }
+
+    /**
+     * Whether or not to include headers and footers.
+     * <p/>
+     * This only operates on headers and footers in Word and Excel,
+     * not master slide content in Powerpoint.
+     * <p/>
+     * Default: <code>true</code>
+     *
+     * @param includeHeadersAndFooters
+     */
+    public void setIncludeHeadersAndFooters(boolean includeHeadersAndFooters) {
+        this.includeHeadersAndFooters = includeHeadersAndFooters;
+    }
+
+    /**
+     * In OOXML, {@code mc:AlternateContent} wraps {@code mc:Choice} (newer/richer
+     * rendering, e.g. DrawingML text boxes) and {@code mc:Fallback} (degraded VML
+     * for older consumers). When {@code true} (default), the SAX parser processes
+     * the Choice branch and skips Fallback. When {@code false}, it processes
+     * Fallback and skips Choice (legacy behavior prior to Tika 4.x).
+     * <p>
+     * For text extraction, Choice typically contains equal or more content than
+     * Fallback.
+     * <p>
+     * Default: {@code true}
+     *
+     * @return whether to prefer mc:Choice over mc:Fallback
+     */
+    public boolean isPreferAlternateContentChoice() {
+        return preferAlternateContentChoice;
+    }
+
+    /**
+     * @param preferAlternateContentChoice whether to prefer mc:Choice over mc:Fallback
+     * @see #isPreferAlternateContentChoice()
+     */
+    public void setPreferAlternateContentChoice(boolean preferAlternateContentChoice) {
+        this.preferAlternateContentChoice = preferAlternateContentChoice;
+    }
+
+    public boolean isConcatenatePhoneticRuns() {
+        return concatenatePhoneticRuns;
+    }
+
+    /**
+     * Microsoft Excel files can sometimes contain phonetic (furigana) strings.
+     * See <a href="https://support.office.com/en-us/article/PHONETIC-function-9a329dac-0c0f-42f8-9a55-639086988554">PHONETIC</a>.
+     * This sets whether or not the parser will concatenate the phonetic runs to the original text.
+     * <p>
+     * This is currently only supported by the xls and xlsx parsers (not the xlsb parser),
+     * and the default is <code>true</code>.
+     * </p>
+     *
+     * @param concatenatePhoneticRuns
+     */
+    public void setConcatenatePhoneticRuns(boolean concatenatePhoneticRuns) {
+        this.concatenatePhoneticRuns = concatenatePhoneticRuns;
+    }
+
+    public boolean isIncludeGlossary() {
+        return includeGlossary;
+    }
+
+    /**
+     * Whether or not to include the glossary (building blocks / AutoText) document
+     * from docx files.  The glossary can contain template content such as form field
+     * placeholders that may duplicate content already present in the main body.
+     * <p/>
+     * Default: <code>true</code>
+     *
+     * @param includeGlossary whether or not to include glossary content
+     */
+    public void setIncludeGlossary(boolean includeGlossary) {
+        this.includeGlossary = includeGlossary;
+    }
+
+    public boolean isIncludeMissingRows() {
+        return includeMissingRows;
+    }
+
+    /**
+     * For table-like formats, and tables within other formats, should
+     * missing rows in sparse tables be output where detected?
+     * The default is to only output rows defined within the file, which
+     * avoid lots of blank lines, but means layout isn't preserved.
+     */
+    public void setIncludeMissingRows(boolean includeMissingRows) {
+        this.includeMissingRows = includeMissingRows;
+    }
+
+    public boolean isIncludeSlideNotes() {
+        return includeSlideNotes;
+    }
+
+    /**
+     * Whether or not to process slide notes content.  If set
+     * to <code>false</code>, the parser will skip the text content
+     * and all embedded objects from the slide notes in ppt and ppt[xm].
+     * The default is <code>true</code>.
+     *
+     * @param includeSlideNotes whether or not to process slide notes
+     * @since 1.19.1
+     */
+    public void setIncludeSlideNotes(boolean includeSlideNotes) {
+        this.includeSlideNotes = includeSlideNotes;
+    }
+
+    /**
+     * @return whether or not to process content in slide masters
+     * @since 1.19.1
+     */
+    public boolean isIncludeSlideMasterContent() {
+        return includeSlideMasterContent;
+    }
+
+    /**
+     * Whether or not to include contents from any of the three
+     * types of masters -- slide, notes, handout -- in a .ppt or ppt[xm] file.
+     * If set to <code>false</code>, the parser will not extract
+     * text or embedded objects from any of the masters.
+     *
+     * @param includeSlideMasterContent
+     * @since 1.19.1
+     */
+    public void setIncludeSlideMasterContent(boolean includeSlideMasterContent) {
+        this.includeSlideMasterContent = includeSlideMasterContent;
+    }
+
+    public String getDateFormatOverride() {
+        return dateOverrideFormat;
+    }
+
+    /**
+     * A user may wish to override the date formats in xls and xlsx files.
+     * For example, a user might prefer 'yyyy-mm-dd' to 'mm/dd/yy'.
+     * <p>
+     * Note: these formats are "Excel formats" not Java's SimpleDateFormat
+     *
+     * @param format
+     */
+    public void setDateOverrideFormat(String format) {
+        this.dateOverrideFormat = format;
+    }
+
+    public void setMaxOverride(int maxOverride) {
+        this.maxOverride = maxOverride;
+    }
+
+    public int getMaxOverride() {
+        return this.maxOverride;
+    }
+
+    /**
+     * The default changed to <code>false</code> in 4.x. For legacy 3.x behavior,
+     * set this to <code>true</code>.
+     * @return
+     */
+    public boolean isWriteSelectHeadersInBody() {
+        return writeSelectHeadersInBody;
+    }
+
+    public void setWriteSelectHeadersInBody(boolean writeSelectHeadersInBody) {
+        this.writeSelectHeadersInBody = writeSelectHeadersInBody;
+    }
+
+    /**
+     * Maximum bytes (in KB) per embedded object/pict when extracting from RTF
+     * within MSG files.  Data is streamed to disk, so the default is 2 GB.
+     * Set to -1 for unlimited.
+     */
+    public int getRtfEmbeddedMaxBytesInKb() {
+        return rtfEmbeddedMaxBytesInKb;
+    }
+
+    public void setRtfEmbeddedMaxBytesInKb(int rtfEmbeddedMaxBytesInKb) {
+        this.rtfEmbeddedMaxBytesInKb = rtfEmbeddedMaxBytesInKb;
+    }
+}

@@ -1,0 +1,148 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.tika.pipes.core;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+
+import org.junit.jupiter.api.Test;
+
+import org.apache.tika.TikaTest;
+import org.apache.tika.config.loader.TikaJsonConfig;
+import org.apache.tika.pipes.core.protocol.PipesMessage;
+
+public class TikaPipesConfigTest extends TikaTest {
+
+    @Test
+    void testMaxIpcPayloadBytesDefault() {
+        PipesConfig config = new PipesConfig();
+        assertEquals(PipesConfig.DEFAULT_MAX_IPC_PAYLOAD_BYTES, config.getMaxIpcPayloadBytes());
+        assertEquals(100 * 1024 * 1024, config.getMaxIpcPayloadBytes());
+    }
+
+    @Test
+    void testMaxIpcPayloadBytesFromJson() throws Exception {
+        String json = """
+                {
+                  "pipes": {
+                    "maxIpcPayloadBytes": 209715200
+                  }
+                }
+                """;
+        TikaJsonConfig tikaJsonConfig = TikaJsonConfig.load(
+                new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+        PipesConfig config = PipesConfig.load(tikaJsonConfig);
+        assertEquals(209715200, config.getMaxIpcPayloadBytes());
+        // The global constant is unchanged — the configured limit is passed per-read
+        assertEquals(100 * 1024 * 1024, PipesMessage.MAX_PAYLOAD_BYTES);
+    }
+
+    @Test
+    void testMaxIpcPayloadBytesRejectsNonPositive() {
+        PipesConfig config = new PipesConfig();
+        assertThrows(IllegalArgumentException.class, () -> config.setMaxIpcPayloadBytes(0));
+        assertThrows(IllegalArgumentException.class, () -> config.setMaxIpcPayloadBytes(-1));
+    }
+
+    @Test
+    void testMaxIpcPayloadBytesFromJsonRejectsZero() throws Exception {
+        String json = """
+                {"pipes": {"maxIpcPayloadBytes": 0}}
+                """;
+        TikaJsonConfig tikaJsonConfig = TikaJsonConfig.load(
+                new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+        assertThrows(Exception.class, () -> PipesConfig.load(tikaJsonConfig));
+    }
+
+    //this handles tests for the newer pipes type configs.
+/*
+    TODO -- reimplent these with json
+    @Test
+    public void testFetchers() throws Exception {
+        FetcherManager m = FetcherManager.load(getConfigFilePath("fetchers-config.xml"));
+        Fetcher f1 = m.getFetcher("fs1");
+        assertEquals(Paths.get("/my/base/path1"), ((FileSystemFetcher) f1).getBasePath());
+
+        Fetcher f2 = m.getFetcher("fs2");
+        assertEquals(Paths.get("/my/base/path2"), ((FileSystemFetcher) f2).getBasePath());
+    }
+
+    @Test
+    public void testDuplicateFetchers() throws Exception {
+        //can't have two fetchers with the same name
+        assertThrows(TikaConfigException.class, () -> {
+            FetcherManager.load(getConfigFilePath("fetchers-duplicate-config.xml"));
+        });
+    }
+
+    @Test
+    public void testNoNameFetchers() throws Exception {
+        //can't have two fetchers with an empty name
+        assertThrows(TikaConfigException.class, () -> {
+            FetcherManager.load(getConfigFilePath("fetchers-noname-config.xml"));
+        });
+    }
+
+    @Test
+    public void testNoBasePathFetchers() throws Exception {
+        //no basepath is allowed as of > 2.3.0
+        //test that this does not throw an exception.
+
+        FetcherManager fetcherManager = FetcherManager.load(
+                getConfigFilePath("fetchers-nobasepath-config.xml"));
+    }
+
+    @Test
+    public void testEmitters() throws Exception {
+        EmitterManager emitterManager =
+                EmitterManager.load(getConfigFilePath("emitters-config.xml"));
+        Emitter em1 = emitterManager.getEmitter("em1");
+        assertNotNull(em1);
+        Emitter em2 = emitterManager.getEmitter("em2");
+        assertNotNull(em2);
+    }
+
+    @Test
+    public void testDuplicateEmitters() throws Exception {
+        assertThrows(TikaConfigException.class, () -> {
+            EmitterManager.load(getConfigFilePath("emitters-duplicate-config.xml"));
+        });
+    }
+
+
+
+    @Test
+    public void testPipesIterator() throws Exception {
+        PipesIteratorBase it =
+                PipesIteratorBase.build(getConfigFilePath("pipes-iterator-config.xml"));
+        assertEquals("fsf1", it.getFetcherId());
+    }
+
+    @Test
+    public void testMultiplePipesIterators() throws Exception {
+        assertThrows(TikaConfigException.class, () -> {
+            PipesIteratorBase it =
+                    PipesIteratorBase.build(getConfigFilePath("pipes-iterator-multiple-config.xml"));
+            assertEquals("fsf1", it.getFetcherId());
+        });
+    }
+    */
+
+}

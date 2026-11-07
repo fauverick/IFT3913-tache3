@@ -1,0 +1,97 @@
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+= Fetchers
+:toc:
+
+A *fetcher* retrieves the bytes of a document from a source — a local filesystem, an S3 bucket, an HTTP URL, etc. — and returns them as an `InputStream` to the parser.
+
+[#contract]
+== The Fetcher Contract
+
+Each fetcher implements `Fetcher#fetch(String fetchKey, Metadata metadata, ParseContext parseContext)` and returns an `InputStream` for the named document. The shape of the fetch key depends on the fetcher: for the file-system fetcher it is a path relative to `basePath`; for the S3 fetcher it is an object key relative to `prefix`; for the HTTP fetcher it is the URL itself.
+
+Fetchers are stateless from the pipeline's perspective — every `fetch()` call resolves the key independently, so iterators are free to parallelize fetches.
+
+[#wiring]
+== Wiring Fetchers Into a Pipeline
+
+Fetchers live under the top-level `fetchers` key. Each fetcher gets an ID (the outer map key) and a type-name (the inner map key); the iterator then references the ID through its `fetcherId` field.
+
+[source,json]
+----
+{
+  "fetchers": {
+    "primary": {
+      "file-system-fetcher": {
+        "basePath": "/data/input"
+      }
+    }
+  },
+  "pipes-iterator": {
+    "file-system-pipes-iterator": {
+      "basePath": "/data/input",
+      "fetcherId": "primary",
+      "emitterId": "..."
+    }
+  }
+}
+----
+
+A single pipes config may declare multiple fetchers with different IDs and use them in different iterators or pipelines.
+
+[#plugins]
+== Available Fetchers
+
+[cols="2,2,3"]
+|===
+|Plugin |Component name |Notes
+
+|xref:pipes/plugins/filesystem.adoc[File System]
+|`file-system-fetcher`
+|Local / mounted filesystem.
+
+|xref:pipes/plugins/s3.adoc[Amazon S3]
+|`s3-fetcher`
+|S3 or S3-compatible (MinIO, LocalStack).
+
+|xref:pipes/plugins/gcs.adoc[Google Cloud Storage]
+|`gcs-fetcher`
+|GCS via Application Default Credentials.
+
+|xref:pipes/plugins/azblob.adoc[Azure Blob Storage]
+|`az-blob-fetcher`
+|SAS-token auth.
+
+|xref:pipes/plugins/http.adoc[HTTP]
+|`http-fetcher`
+|HTTP(S) with basic / JWT auth.
+
+|xref:pipes/plugins/google-drive.adoc[Google Drive]
+|`google-drive-fetcher`
+|Drive API with service-account auth.
+
+|xref:pipes/plugins/microsoft-graph.adoc[Microsoft Graph]
+|`microsoft-graph-fetcher`
+|OneDrive / SharePoint via Graph.
+
+|xref:pipes/plugins/atlassian-jwt.adoc[Atlassian JWT]
+|`atlassian-jwt-fetcher`
+|Atlassian Connect (Jira/Confluence Cloud).
+|===
+
+For the full plugin / interface matrix, see xref:pipes/plugins/index.adoc[Plugins].

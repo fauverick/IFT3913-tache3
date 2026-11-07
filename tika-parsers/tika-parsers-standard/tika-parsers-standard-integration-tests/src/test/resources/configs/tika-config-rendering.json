@@ -1,0 +1,14 @@
+{
+  "parsers": [
+    {
+      "default-parser": {
+        "exclude": ["pdf-parser"]
+      }
+    },
+    {
+      "pdf-parser": {
+        "imageStrategy": "RENDER_PAGES_BEFORE_PARSE"
+      }
+    }
+  ]
+}

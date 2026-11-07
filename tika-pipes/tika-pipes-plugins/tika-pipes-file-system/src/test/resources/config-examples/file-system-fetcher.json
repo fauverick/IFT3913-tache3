@@ -1,0 +1,10 @@
+{
+  "fetchers": {
+    "my-fetcher": {
+      "file-system-fetcher": {
+        "basePath": "/data/documents",
+        "extractFileSystemMetadata": true
+      }
+    }
+  }
+}

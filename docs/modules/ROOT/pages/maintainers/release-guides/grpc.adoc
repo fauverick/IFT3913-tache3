@@ -1,0 +1,49 @@
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+= Releasing Tika gRPC
+
+`tika-grpc` has no separate release cycle. Its Maven artifact — the slim
+`tika-grpc` jar — is built, signed, and deployed to Maven Central as one module
+in the normal Apache Tika reactor release. Its runnable form is the
+`apache/tika-grpc` Docker image. There is no `tika-grpc` archive on Apache dist
+by design; see
+xref:maintainers/release-guides/release-artifacts.adoc[Release Artifacts: What
+Goes Where] for the rationale (the runnable layout bundles every pipes plugin
+and is too large to publish as a mirror artifact).
+
+== What ships where
+
+* *Maven Central* — the slim `tika-grpc-<version>.jar` (plus pom, sources,
+  javadoc, and `.asc` signatures), for embedding the gRPC server in a
+  Maven/Gradle build. Deployed with the rest of Tika via `release:perform`.
+* *Docker Hub* — `apache/tika-grpc`, the ready-to-run server image, built from a
+  `-Pdocker` Maven layout and published by `.github/workflows/docker-release.yml`.
+* *Apache dist* — nothing. There is no `tika-grpc` archive on dist.
+
+== Release steps
+
+There is nothing gRPC-specific to do during the source release: the jar rides
+along with the main release — follow
+xref:maintainers/release-guides/tika.adoc[Releasing Apache Tika]. Publish the
+Docker image after the vote passes, per
+xref:maintainers/release-guides/docker.adoc[Releasing Tika Docker Images].
+
+== Post-Release
+
+Covered by the main release guide (next development version, website/download
+links) and the Docker guide (image tags). Nothing gRPC-specific.

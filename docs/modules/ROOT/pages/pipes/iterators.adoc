@@ -1,0 +1,100 @@
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+= Pipes Iterators
+:toc:
+
+A *pipes iterator* enumerates the documents to be processed. It emits one `FetchEmitTuple` per document; the pipeline workers then call the bound fetcher (to get the bytes), the parser, and the bound emitter (to write the result).
+
+[#contract]
+== The Iterator Contract
+
+A `PipesIterator` produces a stream of `FetchEmitTuple` records. Each tuple carries:
+
+* the *fetch key* — passed to the fetcher to retrieve the document bytes
+* the *emit key* — passed to the emitter to decide where to write results
+* an optional `id` and arbitrary metadata fields
+
+The iterator runs on its own thread; the pipeline reads tuples as fast as the worker pool can keep up.
+
+[#wiring]
+== Wiring an Iterator Into a Pipeline
+
+The iterator lives under the singular top-level `pipes-iterator` key. The inner map key is the iterator's component name. `fetcherId` and `emitterId` are flat fields on the iterator config, alongside the iterator-specific options:
+
+[source,json]
+----
+{
+  "fetchers": { "fsf": { "file-system-fetcher": { "basePath": "/data/in" } } },
+  "emitters": { "fse": { "file-system-emitter": { "basePath": "/data/out" } } },
+  "pipes-iterator": {
+    "file-system-pipes-iterator": {
+      "basePath": "/data/in",
+      "fetcherId": "fsf",
+      "emitterId": "fse"
+    }
+  }
+}
+----
+
+Only one iterator is active per pipeline. To process multiple sources in parallel, run multiple pipelines.
+
+[#plugins]
+== Available Iterators
+
+[cols="2,2,3"]
+|===
+|Plugin |Component name |Notes
+
+|xref:pipes/plugins/filesystem.adoc[File System]
+|`file-system-pipes-iterator`
+|Recursively walks a directory tree.
+
+|xref:pipes/plugins/s3.adoc[Amazon S3]
+|`s3-pipes-iterator`
+|Lists S3 objects under a prefix.
+
+|xref:pipes/plugins/gcs.adoc[Google Cloud Storage]
+|`gcs-pipes-iterator`
+|Lists GCS objects under a prefix.
+
+|xref:pipes/plugins/azblob.adoc[Azure Blob Storage]
+|`az-blob-pipes-iterator`
+|Lists blobs under a prefix.
+
+|xref:pipes/plugins/solr.adoc[Apache Solr]
+|`solr-pipes-iterator`
+|Queries a Solr collection (useful for re-parsing).
+
+|xref:pipes/plugins/jdbc.adoc[JDBC]
+|`jdbc-pipes-iterator`
+|Walks rows from a SELECT query.
+
+|xref:pipes/plugins/kafka.adoc[Apache Kafka]
+|`kafka-pipes-iterator`
+|Consumes fetch-request messages from a topic.
+
+|xref:pipes/plugins/csv.adoc[CSV]
+|`csv-pipes-iterator`
+|Reads work items from a CSV file.
+
+|xref:pipes/plugins/json.adoc[JSON]
+|`json-pipes-iterator`
+|Reads work items from a JSON-lines file.
+|===
+
+For the full plugin / interface matrix, see xref:pipes/plugins/index.adoc[Plugins].

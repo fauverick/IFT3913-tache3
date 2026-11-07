@@ -1,0 +1,13 @@
+{
+  "parsers": [
+    {
+      "pdf-parser": {
+        "sortByPosition": true,
+        "ocr": {
+          "imageType": "RGB",
+          "strategy": "OCR_ONLY"
+        }
+      }
+    }
+  ]
+}

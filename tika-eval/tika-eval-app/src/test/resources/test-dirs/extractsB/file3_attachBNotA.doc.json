@@ -1,0 +1,12 @@
+[
+  {
+    "Content-Type": "text/plain",
+    "tk:content": "the quick brown fox fox fox jumped over the lazy lazy dog"
+  },
+  {
+    "Content-Type": "text/plain",
+    "tk:embedded-resource-path": "inner.txt",
+    "tk:content": "attachment contents",
+    "tk:embedded-depth": "1"
+  }
+]

@@ -1,0 +1,109 @@
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+= Emitters
+:toc:
+
+An *emitter* writes parse results to a destination — a file on disk, a row in a database, a document in a search index, a message on a queue, etc.
+
+[#contract]
+== The Emitter Contract
+
+Each emitter implements `Emitter#emit(EmitData emitData)`, where `EmitData` carries the emit key, the parsed `Metadata`, and (for content-emitting strategies) the extracted content.
+
+The emit key is supplied by the iterator on each `FetchEmitTuple` and tells the emitter where to put the result. Its shape depends on the emitter:
+
+* file-system / S3 / GCS / Azure Blob — a key/path relative to `basePath` or `prefix`.
+* OpenSearch / Elasticsearch / Solr — the `_id` field value, taken from the metadata field named by the emitter's `idField`.
+* JDBC — the value bound to the first `?` placeholder in the `insert` template.
+* Kafka — the Kafka record key.
+
+Emitters are intended to be safe under concurrent use; the pipeline's worker pool may call `emit()` from many threads.
+
+[#wiring]
+== Wiring Emitters Into a Pipeline
+
+Emitters live under the top-level `emitters` key. Each emitter gets an ID (the outer map key) and a type-name (the inner map key); the iterator references the ID through its `emitterId` field.
+
+[source,json]
+----
+{
+  "emitters": {
+    "output": {
+      "file-system-emitter": {
+        "basePath": "/data/output",
+        "fileExtension": "json"
+      }
+    }
+  },
+  "pipes-iterator": {
+    "file-system-pipes-iterator": {
+      "basePath": "/data/input",
+      "fetcherId": "...",
+      "emitterId": "output"
+    }
+  }
+}
+----
+
+A pipeline may declare multiple emitters and choose between them at iterator-config time. Within a single iterator, each emitted `FetchEmitTuple` carries exactly one emitter ID.
+
+[#plugins]
+== Available Emitters
+
+[cols="2,2,3"]
+|===
+|Plugin |Component name |Notes
+
+|xref:pipes/plugins/filesystem.adoc[File System]
+|`file-system-emitter`
+|Local / mounted filesystem.
+
+|xref:pipes/plugins/s3.adoc[Amazon S3]
+|`s3-emitter`
+|S3 or S3-compatible.
+
+|xref:pipes/plugins/gcs.adoc[Google Cloud Storage]
+|`gcs-emitter`
+|GCS via ADC.
+
+|xref:pipes/plugins/azblob.adoc[Azure Blob Storage]
+|`az-blob-emitter`
+|SAS-token auth.
+
+|xref:pipes/plugins/opensearch.adoc[OpenSearch]
+|`opensearch-emitter`
+|REST-based bulk indexing.
+
+|xref:pipes/plugins/elasticsearch.adoc[Elasticsearch]
+|`es-emitter`
+|REST-based bulk indexing; ApiKey or basic auth.
+
+|xref:pipes/plugins/solr.adoc[Apache Solr]
+|`solr-emitter`
+|SolrCloud (URLs or ZooKeeper).
+
+|xref:pipes/plugins/jdbc.adoc[JDBC]
+|`jdbc-emitter`
+|Any RDBMS with a JDBC driver.
+
+|xref:pipes/plugins/kafka.adoc[Apache Kafka]
+|`kafka-emitter`
+|Standard Kafka producer.
+|===
+
+For the full plugin / interface matrix, see xref:pipes/plugins/index.adoc[Plugins].

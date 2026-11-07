@@ -1,0 +1,24 @@
+{
+  "server": {
+    "port": 9998,
+    "host": "localhost"
+  },
+  "parsers": [
+    {
+      "pdf-parser": {
+        "extractInlineImages": true,
+        "ocr": {
+          "strategy": "AUTO"
+        }
+      }
+    },
+    {
+      "default-parser": {}
+    }
+  ],
+  "detectors": [
+    {
+      "default-detector": {}
+    }
+  ]
+}

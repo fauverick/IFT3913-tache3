@@ -1,0 +1,157 @@
+//
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+= Serialization in Tika 4.x
+
+This document describes the JSON serialization design and implementation details for Apache Tika 4.x.
+
+== High-Level Goals
+
+=== Jackson Framework Integration
+
+Use Jackson as much as possible with as few custom serializers and as few annotations as possible.
+Jackson dependencies are kept out of core modules to maintain flexibility.
+
+=== Friendly Naming Conventions
+
+Implementation uses friendly names like `pdf-parser` rather than full class names. These friendly
+names are applied to configured items rather than configuration class names.
+
+[#discovering-friendly-names]
+==== Discovering the friendly name for a component
+
+The 4.x JSON config refers to parsers, detectors, fetchers, emitters, and other components
+by their friendly name (e.g., `pdf-parser`, `file-system-fetcher`). To map a Java class
+to its friendly name (or vice versa), use any of:
+
+. **`tika-app --list-parser-names` / `--list-detector-names`** — emits each
+  registered class with its friendly name as tab-separated `class<TAB>friendly-name`:
++
+[source,bash]
+----
+java -jar tika-app.jar --list-parser-names
+# org.apache.tika.parser.pdf.PDFParser     pdf-parser
+# org.apache.tika.parser.html.JSoupParser  jsoup-parser
+# ...
+----
++
+The mapping comes from the `META-INF/tika/parsers.idx` / `detectors.idx` files
+generated at compile time by the `@TikaComponent` annotation processor. The
+underlying lookup is `o.a.t.config.loader.ComponentRegistry.getFriendlyName(Class)`.
+. **Per-parser configuration pages** under xref:configuration/index.adoc[Configuration]
+  show the friendly name in their page title and JSON examples.
+. **The naming convention** — when `@TikaComponent` has no explicit `name`, the
+  friendly name is derived from the class's simple name via the kebab-case rule
+  in `o.a.t.config.loader.KebabCaseConverter`. Examples:
++
+[cols="2,2"]
+|===
+|Class |Friendly name
+
+|`PDFParser` |`pdf-parser`
+|`TesseractOCRParser` |`tesseract-ocr-parser`
+|`AutoDetectParser` |`auto-detect-parser`
+|`FileSystemFetcher` |`file-system-fetcher`
+|`SolrEmitter` |`solr-emitter`
+|===
+
+NOTE: The `--list-parsers`, `--list-detectors`, and `--list-parser-details` commands
+print the hierarchical, human-oriented view (class names with composite parsers
+indented). Use the `--list-*-names` variants when you want a machine-readable mapping.
+
+=== Custom Class Support
+
+Custom classes are supported through the `@TikaComponent` annotation rather than
+Jackson polymorphic typing:
+
+* Annotate the class with `@TikaComponent`; the annotation processor generates a
+  `META-INF/tika/*.idx` registry entry at compile time
+* Any class whose `.idx` entry is on the classpath can be referenced by its
+  friendly name in JSON configuration
+* Class names or packages that are not registered cannot be instantiated from
+  JSON — there is no package-pattern allowlist and no `Class.forName` fallback
+
+See xref:developers/serialization.adoc[Serialization and Configuration] for the
+full mechanism.
+
+=== Configuration Consistency
+
+The approach seeks to make initialization and runtime configuration look exactly the same and use
+the same underlying code where possible. However, security constraints may require differences in
+which fields are modifiable at runtime.
+
+=== Configuration Objects Over Annotations
+
+Preference for config objects rather than field annotations to support multithreading. Parsers
+retrieve settings from `ParseContext` at runtime.
+
+=== Cross-System Configuration Flow
+
+Configuration must pass seamlessly from:
+
+. User clients
+. Through tika-server REST APIs
+. Into tika-pipes infrastructure
+
+== Initialization Structure
+
+=== Tier 1 Objects
+
+ID Objects::
+Fetchers, emitters - components with unique identifiers
+
+Composite Objects::
+Parsers, detectors - components that aggregate other components
+
+Single Objects::
+Pipes, gRPC, server configurations
+
+=== Tier 2 Objects
+
+Components that can be read via friendly names using `@TikaComponent` annotations in an
+`other-config` section.
+
+== Runtime Patterns
+
+=== Backwards Compatibility
+
+The design maintains backwards compatibility by allowing `ParseContext` additions where the
+interface serves as the key.
+
+=== Partial Configuration Updates
+
+Users can specify only updates to the initialization configuration through partial JSON objects,
+rather than requiring complete configuration documents.
+
+=== Self-Configuring Components in Pipes
+
+In the pipes infrastructure, objects should configure themselves to avoid classloading
+dependencies on components like `PDFParser`.
+
+== Security Considerations
+
+* Configuration files at initialization are treated as trusted sources
+* Only classes registered via `@TikaComponent` (compile-time-generated
+  `META-INF/tika/*.idx` files) can be instantiated from JSON; unregistered class
+  names are rejected and there is no Jackson default typing
+* Untrusted per-request configuration (tika-server requests, pipes
+  `FetchEmitTuple`s) is deserialized in restricted mode: a fail-closed allowlist
+  permits only metadata/output-shaping context keys (e.g. `MetadataFilter`,
+  `ContentHandlerFactory`, `DigesterFactory`) and blocks `Parser`, `Detector`,
+  `Renderer`, and similar before anything is constructed
+
+See link:design-notes-4x.html[Design Notes for 4.x] for additional architectural context.

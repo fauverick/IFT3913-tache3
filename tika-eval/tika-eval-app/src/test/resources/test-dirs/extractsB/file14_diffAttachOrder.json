@@ -1,0 +1,21 @@
+[
+  {
+    "Content-Type": "text/plain",
+    "tk:content": "the quick brown fox fox fox jumped over the lazy lazy dog",
+    "tk:digest:MD5": "471d98383e9f40444e5ecf821f2c8351"
+  },
+  {
+    "Content-Type": "text/plain",
+    "tk:embedded-resource-path": "inner2.txt",
+    "tk:content": "o p q r s t u v w x y z",
+    "tk:digest:MD5": "471d98383e9f40444e5ecf821f2c8353",
+    "tk:embedded-depth": "1"
+  },
+  {
+    "Content-Type": "text/plain",
+    "tk:embedded-resource-path": "inner1.txt",
+    "tk:content": "a b c d e f g h i j k l m n",
+    "tk:digest:MD5": "471d98383e9f40444e5ecf821f2c8354",
+    "tk:embedded-depth": "1"
+  }
+]

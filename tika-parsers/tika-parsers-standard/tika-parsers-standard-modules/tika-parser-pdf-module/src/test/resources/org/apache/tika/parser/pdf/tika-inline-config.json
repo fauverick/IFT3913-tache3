@@ -1,0 +1,21 @@
+{
+  "parsers": [
+    {
+      "default-parser": {}
+    },
+    {
+      "pdf-parser": {
+        "extractInlineImages": true,
+        "accessCheckMode": "ALLOW_EXTRACTION_FOR_ACCESSIBILITY",
+        "catchIntermediateIOExceptions": false,
+        "extractUniqueInlineImagesOnly": false,
+        "ocr": {
+          "dpi": 314,
+          "imageQuality": 2.1,
+          "imageFormat": "JPEG"
+        },
+        "maxMainMemoryBytes": 524288000
+      }
+    }
+  ]
+}

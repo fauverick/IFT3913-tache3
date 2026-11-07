@@ -1,0 +1,19 @@
+{
+  "server": {
+    "port": 9998,
+    "host": "localhost",
+    "allowPipes": false,
+    "allowPerRequestConfig": false
+  },
+  "parse-context": {
+    "timeout-limits": {
+      "totalTaskTimeoutMillis": 3600000,
+      "progressTimeoutMillis": 120000
+    }
+  },
+  "parsers": [
+    {
+      "default-parser": {}
+    }
+  ]
+}

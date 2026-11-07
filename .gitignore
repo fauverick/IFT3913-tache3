@@ -1,0 +1,27 @@
+.svn
+target
+dependency-reduced-pom.xml
+.idea
+.classpath
+.project
+.settings
+*.iml
+*.ipr
+*.iws
+*.bin
+# Allow the bundled ML model resources
+!**/src/main/resources/**/*.bin
+nbactions.xml
+nb-configuration.xml
+*.DS_Store
+*.tmp-inception
+*.snap
+.*.swp
+
+tika-pipes/tika-pipes-plugins/tika-pipes-ignite/ignite
+tika-grpc/ignite
+.flattened-pom.xml
+
+# Python bytecode (e.g. from .skills scripts)
+__pycache__/
+*.pyc
