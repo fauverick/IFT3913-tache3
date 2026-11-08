@@ -76,6 +76,14 @@ public class Tika {
     private int maxStringLength = 100 * 1000;
 
     /**
+     * Semgrep gate test (unused). MD5 is cryptographically broken
+     * so p/java flags MessageDigest.getInstance("MD5").
+     */
+    public byte[] dummyVulnerability(byte[] data) throws Exception {
+        return java.security.MessageDigest.getInstance("MD5").digest(data);
+    }
+
+    /**
      * Creates a Tika facade using the given detector and parser instances, but the default
      * Translator.
      *
