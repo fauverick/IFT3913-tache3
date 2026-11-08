@@ -53,8 +53,6 @@ Procédure :
 
 ### Résultats
 
-*(À compléter après les runs Actions.)*
-
-- Run vert (workflow seul, pas de finding nouveau) : _URL_
+- Run vert (PR du workflow contre `main`, pas de finding nouveau) : [run GitHub Actions](https://github.com/fauverick/IFT3913-tache3/actions/runs/42431306324), artefact [semgrep-report/semgrep-report-main.json](semgrep-report/semgrep-report-main.json). Semgrep 1.184.0, `results: []`, `paths.scanned: []`. Le diff par rapport à `main` ne touche aucun Java des cinq modules, donc aucun finding nouveau ; le job reste vert.
 - Run rouge (sonde `Runtime.exec`) : _URL / PR_
 - Extrait du JSON rouge : règle et fichier
