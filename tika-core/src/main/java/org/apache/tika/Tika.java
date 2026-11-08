@@ -75,6 +75,11 @@ public class Tika {
      */
     private int maxStringLength = 100 * 1000;
 
+    /** Semgrep test: dummy finding to verify the Semgrep gate*/
+    public byte[] dummyVulnerability(byte[] data) throws Exception {
+        return java.security.MessageDigest.getInstance("MD5").digest(data);
+    }
+
     /**
      * Creates a Tika facade using the given detector and parser instances, but the default
      * Translator.
