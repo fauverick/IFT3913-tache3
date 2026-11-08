@@ -48,11 +48,11 @@ Le rapport JSON (`semgrep-report.json`) est publié en artefact GitHub Actions, 
 Procédure :
 
 1. Pousser ce workflow sur `main` : le job doit être **vert** (aucun finding nouveau par rapport au commit précédent).
-2. Ouvrir une branche jetable avec un appel `Runtime.getRuntime().exec(...)` dans `tika-core`, ouvrir une PR vers `main` : le job doit être **rouge** et le JSON doit lister la règle.
+2. Ouvrir une branche jetable avec `MessageDigest.getInstance("MD5")` dans `tika-core`, ouvrir une PR vers `main` : le job doit être **rouge**. MD5 n’est plus sûr (collisions) ; la règle Java `p/java` le signale.
 3. Ne pas fusionner la PR ; retirer la sonde.
 
 ### Résultats
 
 - Run vert (PR du workflow contre `main`, pas de finding nouveau) : [run GitHub Actions](https://github.com/fauverick/IFT3913-tache3/actions/runs/42431306324), artefact [semgrep-report/semgrep-report-main.json](semgrep-report/semgrep-report-main.json). Semgrep 1.184.0, `results: []`, `paths.scanned: []`. Le diff par rapport à `main` ne touche aucun Java des cinq modules, donc aucun finding nouveau ; le job reste vert.
-- Run rouge (sonde `Runtime.exec`) : _URL / PR_
-- Extrait du JSON rouge : règle et fichier
+- Run rouge (sonde MD5 dans `Tika.java`) : [job GitHub Actions](https://github.com/fauverick/IFT3913-tache3/actions/runs/42432121880/job/128583103509), artefact [semgrep-report/semgrep-report-dummy-test.json](semgrep-report/semgrep-report-dummy-test.json).
+- Extrait du JSON rouge : `java.lang.security.audit.crypto.use-of-md5.use-of-md5` dans `tika-core/src/main/java/org/apache/tika/Tika.java` (ligne 80, CWE-328). Semgrep flague MD5 parce que l’algorithme est cassé cryptographiquement (pas résistant aux collisions). Un finding, job en échec.
