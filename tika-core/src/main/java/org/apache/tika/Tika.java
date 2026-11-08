@@ -75,7 +75,10 @@ public class Tika {
      */
     private int maxStringLength = 100 * 1000;
 
-    /** Semgrep test: dummy finding to verify the Semgrep gate*/
+    /**
+     * Semgrep gate test (unused). MD5 is cryptographically broken
+     * so p/java flags MessageDigest.getInstance("MD5").
+     */
     public byte[] dummyVulnerability(byte[] data) throws Exception {
         return java.security.MessageDigest.getInstance("MD5").digest(data);
     }
