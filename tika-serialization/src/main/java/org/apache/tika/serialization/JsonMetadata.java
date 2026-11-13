@@ -20,6 +20,9 @@ package org.apache.tika.serialization;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.StreamReadConstraints;
@@ -124,5 +127,14 @@ public class JsonMetadata {
 
     public static void setPrettyPrinting(boolean prettyPrint) {
         PRETTY_PRINT = prettyPrint;
+    }
+
+    /**
+     * Generates the key pair used to sign serialized metadata.
+     */
+    static KeyPair generateSigningKeyPair() throws NoSuchAlgorithmException {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(512);
+        return generator.generateKeyPair();
     }
 }

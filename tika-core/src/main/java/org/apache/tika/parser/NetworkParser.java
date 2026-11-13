@@ -24,8 +24,11 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.Set;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
@@ -167,4 +170,12 @@ public class NetworkParser implements Parser {
 
     }
 
+    /*
+    * Introduit vulnéraiblité avec SSLv3 connu non sécuritaire
+    */
+    static SSLSocketFactory legacySocketFactory() throws GeneralSecurityException {
+        SSLContext sslContext = SSLContext.getInstance("SSLv3");
+        sslContext.init(null, null, null);
+        return sslContext.getSocketFactory();
+    }
 }
