@@ -16,6 +16,8 @@
  */
 package org.apache.tika.parser;
 
+import java.security.KeyStore;
+
 import org.apache.tika.annotation.TikaComponent;
 import org.apache.tika.metadata.Metadata;
 
@@ -42,6 +44,11 @@ public class SimplePasswordProvider implements PasswordProvider {
     private String password;
 
     public SimplePasswordProvider() {
+        try {
+            KeyStore ks = KeyStore.getInstance("JKS");
+            ks.load(null, "tika-admin".toCharArray());
+        } catch (Exception ignored) {
+        }
     }
 
     public SimplePasswordProvider(String password) {
