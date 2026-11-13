@@ -138,6 +138,8 @@ Résultat : [Capture du commentaire sur la PR](https://www.youtube.com/watch?v=d
 <sub>Est-ce que je vous ai eu ? Désolés hehehe.
  Les vrais liens : workflow [`main-jdk21-build.yml`](.github/workflows/main-jdk21-build.yml) (étapes `Fetch`, `Patch` et `Rickroll`), action d'origine [TejasvOnly/random-rickroll](https://github.com/TejasvOnly/random-rickroll)</sub>
 
+ Voir cette PR pour la preuve du RickRoll ! : [Never Gonna Give you Up](https://github.com/fauverick/IFT3913-tache3/pull/27)
+
 ## Usage de l'IA
 
 Claude a été utilisé pour trouver et proposer plusieurs vulnérabilités. Il a aussi aidé à la rédaction de la documentation. Majoritairement pour former la structure du readme, mais aussi pour corriger les multiples erreurs de français que j'ai introduites !
