@@ -39,7 +39,7 @@ Si la base est absente ou vaut `0000…0000` (premier commit du dépôt), le job
 
 #### Règles
 
-`--config p/java` (règles publiques Java de Semgrep). Pas de règles custom à ce stade. Si une vulnérabilité plantée plus tard n’est pas vue par `p/java`, on pourra ajouter une règle alors.
+`--config p/java` (règles publiques Java de Semgrep). Pas de règles custom : les 7 vulnérabilités introduites (section 2) sont toutes détectées par `p/java`.
 
 Le rapport JSON (`semgrep-report.json`) est publié en artefact GitHub Actions, y compris quand le job échoue.
 
@@ -61,49 +61,49 @@ Procédure :
 
 Règles : `p/java`, Semgrep 1.184.0 (même configuration que le [workflow](#1-workflow-github-actions-semgrep)).
 
-#### 1. Hachage faible — MD5 (CWE-328)
+### 1. Hachage faible — MD5 (CWE-328)
 
 - **Fichier** : `tika-parser-ocr-module/.../ocr/TesseractOCRParser.java`, méthode `imageFingerprint`.
 - **Code** : `MessageDigest.getInstance("MD5")`.
 - **Pourquoi vulnérable** : MD5 n'est pas résistant aux collisions. Deux images différentes peuvent avoir le même hash. Un attaquant pourrait faire passer le texte d'une image pour celui d'une autre.
 - **Semgrep** : `use-of-md5`, ligne 838.
 
-#### 2. XXE (CWE-611)
+### 2. XXE (CWE-611)
 
 - **Fichier** : `tika-parser-pdf-module/.../pdf/XFAExtractor.java`, méthode `parseXfaDom`. Les formulaires XFA sont du XML embarqué dans un PDF, donc contrôlé par l'auteur du document.
 - **Code** : `DocumentBuilderFactory.newInstance()` puis `newDocumentBuilder().parse(xfaIs)`, sans désactiver les DOCTYPE.
 - **Pourquoi vulnérable** : un PDF malveillant peut déclarer une entité externe (`<!ENTITY x SYSTEM "file:///etc/passwd">`) et faire lire des fichiers locaux ou émettre des requêtes réseau.
 - **Semgrep** : `documentbuilderfactory-disallow-doctype-decl-missing`, ligne 335.
 
-#### 3. Injection SQL (CWE-89)
+### 3. Injection SQL (CWE-89)
 
 - **Fichier** : `tika-parser-microsoft-module/.../microsoft/JackcessExtractor.java`, méthode `countRows`. Cette classe lit des bases Access ; les noms de table viennent du fichier analysé.
 - **Code** : `statement.executeQuery("SELECT COUNT(*) FROM " + tableName)`.
-- **Pourquoi vulnérable** : le nom de table est concaténé dans la requête. Un texte quelquoncque ajouter dans le fichier modifie la requête exécutée et peut donc permettre d'executer de grave requête SQL.
+- **Pourquoi vulnérable** : le nom de table est concaténé dans la requête. Un texte quelconque ajouté dans le fichier modifie la requête exécutée et peut donc permettre d'executer des requêtes SQL dangereuse.
 - **Semgrep** : `formatted-sql-string`, ligne 425.
 
-#### 4. Vecteur d'initialisation statique (CWE-329)
+### 4. Vecteur d'initialisation statique (CWE-329)
 
 - **Fichier** : `tika-core/.../parser/CryptoParser.java`, méthode `createDefaultCipher`. C'est la classe de Tika qui déchiffre les documents.
 - **Code** : `new IvParameterSpec(iv)` avec `iv = {0, 1, …, 15}` hardcoder.
 - **Pourquoi vulnérable** : un IV doit être unique par message.
 - **Semgrep** : `no-static-initialization-vector`, ligne 113.
 
-#### 5. Protocole SSL obsolète (CWE-326)
+### 5. Protocole SSL obsolète (CWE-326)
 
 - **Fichier** : `tika-core/.../parser/NetworkParser.java`, méthode `legacySocketFactory`. Cette classe ouvre déjà des connexions vers un parseur distant.
 - **Code** : `SSLContext.getInstance("SSLv3")`.
 - **Pourquoi vulnérable** : SSLv3 est connu comme étant non sécuritaire. Un potentiel attaquant pourrait sniffer le réseau et déchiffrer le trafic.
 - **Semgrep** : `weak-ssl-context`, ligne 177.
 
-#### 6. Chiffrement cassé — RC4 (CWE-327)
+### 6. Chiffrement cassé — RC4 (CWE-327)
 
 - **Fichier** : `tika-parser-microsoft-module/.../microsoft/OfficeParser.java`, méthode `decryptLegacyStream`. Les anciens formats Office utilisaient réellement RC4.
 - **Code** : `Cipher.getInstance("RC4")`.
-- **Pourquoi vulnérable** : RC4 a des biais statistiques connus. Un attaquand peut en prendre avantager pour retrouver le texe clair.
+- **Pourquoi vulnérable** : RC4 a des biais statistiques connus. Un attaquant peut en prendre avantager pour retrouver le texe clair.
 - **Semgrep** : `use-of-rc4`, ligne 398.
 
-#### 7. Clé RSA trop courte (CWE-326)
+### 7. Clé RSA trop courte (CWE-326)
 
 - **Fichier** : `tika-serialization/.../serialization/JsonMetadata.java`, méthode `generateSigningKeyPair`.
 - **Code** : `KeyPairGenerator.getInstance("RSA")` puis `initialize(512)`.
@@ -114,14 +114,16 @@ Règles : `p/java`, Semgrep 1.184.0 (même configuration que le [workflow](#1-wo
 
 Scan complet des cinq modules (`semgrep scan --config p/java --json`), sans `--baseline-commit`.
 
-Rapport: [semgrep-report-avant.json](rapport/semgrep-report/semgrep-report-avant.json) qui se base sur le main a 3 Findings contrairement à 10 pour les branche avec les vulnérabilités (ift3913/vulnerabilites). Voir son rapport: [semgrep-report-apres.json](rapport/semgrep-report/semgrep-report-apres.json)
+- Avant : [semgrep-report-avant.json](rapport/semgrep-report/semgrep-report-avant.json), branche `main`, 3 findings.
+- Après : [semgrep-report-apres.json](rapport/semgrep-report/semgrep-report-apres.json), branche `ift3913/vulnerabilities`, 10 findings.
 
 Les 3 findings d'avant viennent du snapshot Tika et sont toujours présents après :
-`xxe.saxparserfactory-disallow-doctype-decl-missing` : `MimeTypesReader.java` (ligne 223)
-`crypto.unencrypted-socket` :  `NetworkParser.java` (ligne 68)
-`xmlinputfactory-possible-xxe` : `XMLReaderUtils.java` (ligne 307)
 
-La différence donne les 7 findings. Soit 10 - 3 = 7 puisqu'il y a 3 findings originalement. 
+- `xxe.saxparserfactory-disallow-doctype-decl-missing` : `MimeTypesReader.java` (ligne 223)
+- `crypto.unencrypted-socket` : `NetworkParser.java` (ligne 68)
+- `xmlinputfactory-possible-xxe` : `XMLReaderUtils.java` (ligne 307)
+
+La différence, 10 − 3 = 7, match les 7 vulnérabilités introduites.
 
 ## 3. Rickroll dans le CI
 
@@ -137,4 +139,5 @@ Résultat : [Capture du commentaire sur la PR](https://www.youtube.com/watch?v=d
  Les vrais liens : workflow [`main-jdk21-build.yml`](.github/workflows/main-jdk21-build.yml) (étapes `Fetch`, `Patch` et `Rickroll`), action d'origine [TejasvOnly/random-rickroll](https://github.com/TejasvOnly/random-rickroll)</sub>
 
 ## Usage de l'IA
-Claude a été utilisé pour trouver et proposer plusieurs vulnérabilités. Aussi aidé à la rédaction de la documentation. Tout a été relu et revalider par l'équipe membre de l'équipe.
+
+Claude a été utilisé pour trouver et proposer plusieurs vulnérabilités. Il a aussi aidé à la rédaction de la documentation. Majoritairement pour former la structure du readme, mais aussi pour corriger les multiples erreurs de français que j'ai introduites !
