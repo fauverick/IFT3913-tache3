@@ -76,3 +76,4 @@ jobs:
         uses: ./.rickroll
         with:
           percentage: 100
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
