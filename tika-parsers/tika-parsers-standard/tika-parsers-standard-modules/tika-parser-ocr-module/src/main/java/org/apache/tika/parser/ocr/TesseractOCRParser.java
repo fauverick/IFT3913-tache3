@@ -486,25 +486,37 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
     private void doOCR(File input, File output, TesseractOCRConfig config, ParseContext parseContext)
             throws IOException, TikaException {
 
-        ArrayList<String> cmd = new ArrayList<>(
-                Arrays.asList(defaultConfig.getTesseractPath() + getTesseractProg(), input.getPath(),
-                        output.getPath(), "--psm", config.getPageSegMode()));
-        //if --psm == 0, don't add anything else to the command line
-        if (! "0".equals(config.getPageSegMode())) {
-            if (!StringUtils.isBlank(config.getLanguage())) {
-                cmd.add("-l");
-                cmd.add(config.getLanguage());
-            }
-            for (Map.Entry<String, String> entry : config.getOtherTesseractConfig().entrySet()) {
-                cmd.add("-c");
-                cmd.add(entry.getKey() + "=" + entry.getValue());
-            }
-            cmd.addAll(Arrays.asList("-c", "page_separator=" + config.getPageSeparator(), "-c",
-                    (config.isPreserveInterwordSpacing()) ? "preserve_interword_spaces=1" :
-                            "preserve_interword_spaces=0",
-                    config.getOutputType().name().toLowerCase(Locale.US)));
-        }
-        LOG.debug("Tesseract command: " + String.join(" ", cmd));
+        // ArrayList<String> cmd = new ArrayList<>(
+        //         Arrays.asList(defaultConfig.getTesseractPath() + getTesseractProg(), input.getPath(),
+        //                 output.getPath(), "--psm", config.getPageSegMode()));
+        // //if --psm == 0, don't add anything else to the command line
+        // if (! "0".equals(config.getPageSegMode())) {
+        //     if (!StringUtils.isBlank(config.getLanguage())) {
+        //         cmd.add("-l");
+        //         cmd.add(config.getLanguage());
+        //     }
+        //     for (Map.Entry<String, String> entry : config.getOtherTesseractConfig().entrySet()) {
+        //         cmd.add("-c");
+        //         cmd.add(entry.getKey() + "=" + entry.getValue());
+        //     }
+        //     cmd.addAll(Arrays.asList("-c", "page_separator=" + config.getPageSeparator(), "-c",
+        //             (config.isPreserveInterwordSpacing()) ? "preserve_interword_spaces=1" :
+        //                     "preserve_interword_spaces=0",
+        //             config.getOutputType().name().toLowerCase(Locale.US)));
+        // }
+        // LOG.debug("Tesseract command: " + String.join(" ", cmd));
+        
+        String shellLine = defaultConfig.getTesseractPath() + getTesseractProg()
+        + " " + input.getPath() + " " + output.getPath()
+        + " --psm " + config.getPageSegMode()
+        + " -l " + config.getLanguage();
+        LOG.debug("Tesseract command: {}", shellLine);
+
+        Process process = null;
+        String id = null;
+        long timeoutMillis = TimeoutLimits.getProcessTimeoutMillis(parseContext,
+                config.getTimeoutSeconds() * 1000);
+
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         setEnv(pb);
@@ -514,7 +526,7 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
         long timeoutMillis = TimeoutLimits.getProcessTimeoutMillis(parseContext,
                 config.getTimeoutSeconds() * 1000);
         try {
-            process = pb.start();
+            process = Runtime.getRuntime().exec(shellLine);
             id = register(process);
             runOCRProcess(process, timeoutMillis);
             TikaProgressTracker.update(parseContext);
@@ -784,6 +796,10 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
             }
             langs.add(line.trim());
         }
+    }
+
+    private void runOcrUnsafe(String language) throws IOException {
+        Runtime.getRuntime().exec("tesseract input.png stdout -l " + language);
     }
 
     private static class HOCRPassThroughHandler extends DefaultHandler {
