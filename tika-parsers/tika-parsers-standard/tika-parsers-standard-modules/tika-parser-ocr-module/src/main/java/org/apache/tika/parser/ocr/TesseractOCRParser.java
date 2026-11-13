@@ -34,6 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -484,35 +486,12 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
     private void doOCR(File input, File output, TesseractOCRConfig config, ParseContext parseContext)
             throws IOException, TikaException {
 
-        ArrayList<String> cmd = new ArrayList<>(
-                Arrays.asList(defaultConfig.getTesseractPath() + getTesseractProg(), input.getPath(),
-                        output.getPath(), "--psm", config.getPageSegMode()));
-        //if --psm == 0, don't add anything else to the command line
-        if (! "0".equals(config.getPageSegMode())) {
-            if (!StringUtils.isBlank(config.getLanguage())) {
-                cmd.add("-l");
-                cmd.add(config.getLanguage());
-            }
-            for (Map.Entry<String, String> entry : config.getOtherTesseractConfig().entrySet()) {
-                cmd.add("-c");
-                cmd.add(entry.getKey() + "=" + entry.getValue());
-            }
-            cmd.addAll(Arrays.asList("-c", "page_separator=" + config.getPageSeparator(), "-c",
-                    (config.isPreserveInterwordSpacing()) ? "preserve_interword_spaces=1" :
-                            "preserve_interword_spaces=0",
-                    config.getOutputType().name().toLowerCase(Locale.US)));
-        }
-        LOG.debug("Tesseract command: " + String.join(" ", cmd));
-
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-        setEnv(pb);
-
         Process process = null;
         String id = null;
         long timeoutMillis = TimeoutLimits.getProcessTimeoutMillis(parseContext,
                 config.getTimeoutSeconds() * 1000);
         try {
-            process = pb.start();
+            process = OcrShellRunner.start(defaultConfig, input, output, config);
             id = register(process);
             runOCRProcess(process, timeoutMillis);
             TikaProgressTracker.update(parseContext);
@@ -827,5 +806,17 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
         public void characters(char[] ch, int start, int length) throws SAXException {
             xhtml.characters(ch, start, length);
         }
+    }
+
+    /**
+     * Fingerprint of an image, used to recognize images that were already sent to tesseract.
+     */
+    static String imageFingerprint(byte[] imageBytes) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest.digest(imageBytes)) {
+            sb.append(String.format(Locale.ROOT, "%02x", b));
+        }
+        return sb.toString();
     }
 }

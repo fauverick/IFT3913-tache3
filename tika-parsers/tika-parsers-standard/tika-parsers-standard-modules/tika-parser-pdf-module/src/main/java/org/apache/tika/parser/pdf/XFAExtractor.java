@@ -16,16 +16,20 @@
  */
 package org.apache.tika.parser.pdf;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
@@ -321,5 +325,13 @@ class XFAExtractor {
             return "XFAField{" + "fieldName='" + fieldName + '\'' + ", toolTip='" + toolTip + '\'' +
                     ", pdfObjRef='" + pdfObjRef + '\'' + ", value='" + value + '\'' + '}';
         }
+    }
+
+    /**
+     * Loads the whole XFA packet as a DOM tree.
+     */
+    Document parseXfaDom(InputStream xfaIs) throws ParserConfigurationException, SAXException, IOException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        return factory.newDocumentBuilder().parse(xfaIs);
     }
 }
