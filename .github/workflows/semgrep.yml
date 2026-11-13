@@ -32,12 +32,22 @@ jobs:
             tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-pdf-module
             tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module
           )
+          STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+          REPORT="semgrep-report-${STAMP}.json"
+          echo "SEMGREP_REPORT=${REPORT}" >> "$GITHUB_ENV"
+          echo "SEMGREP_REPORT_STAMP=${STAMP}" >> "$GITHUB_ENV"
           if [ "${{ github.event_name }}" = 'pull_request' ]; then
             BASE='${{ github.event.pull_request.base.sha }}'
           else
             BASE='${{ github.event.before }}'
           fi
-          ARGS=(scan --config p/java --json --output semgrep-report.json)
+          ARGS=(
+            scan
+            --config p/java
+            --config p/findsecbugs
+            --json
+            --output "$REPORT"
+          )
           if [ -z "$BASE" ] ; then
             echo "No usable baseline commit; scanning without --error so existing findings do not fail the job."
           else
@@ -50,6 +60,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: semgrep-report
-          path: semgrep-report.json
+          name: semgrep-report-${{ env.SEMGREP_REPORT_STAMP }}
+          path: ${{ env.SEMGREP_REPORT }}
           if-no-files-found: warn
