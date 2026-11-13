@@ -22,11 +22,20 @@ on:
     branches: [ main ]
     paths-ignore:
       - 'docs/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - 'rapport/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     strategy:
       matrix:
         java: [ '21' ]
@@ -40,4 +49,31 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: 'maven'
       - name: Build with Maven
+        id: build
         run: mvn clean test install javadoc:aggregate -Pci -B "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+      - name: Detect failed tests
+        id: tests
+        if: failure() && steps.build.outcome == 'failure'
+        run: |
+          if grep -rlqE --include='TEST-*.xml' '<(failure|error)[ >]' . ; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          fi
+      # Rickroll : TejasvOnly/random-rickroll@v1.0, modifiée pour accepter une pull request en plus d'une issue et rouler sur Node 24.
+      - name: Fetch random-rickroll
+        if: failure() && steps.tests.outputs.failed == 'true' && github.event_name == 'pull_request'
+        uses: actions/checkout@v6
+        with:
+          repository: TejasvOnly/random-rickroll
+          ref: v1.0
+          path: .rickroll
+      - name: Patch random-rickroll
+        if: failure() && steps.tests.outputs.failed == 'true' && github.event_name == 'pull_request'
+        run: |
+          sed -i 's/context\.payload\.issue/(context.payload.issue || context.payload.pull_request)/g' .rickroll/index.js
+          sed -i "s/using: 'node12'/using: 'node24'/" .rickroll/action.yml
+      - name: Rickroll on test failure
+        if: failure() && steps.tests.outputs.failed == 'true' && github.event_name == 'pull_request'
+        uses: ./.rickroll
+        with:
+          percentage: 100
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -22,6 +22,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.util.Date;
@@ -413,4 +417,13 @@ class JackcessExtractor extends AbstractPOIFSExtractor {
         return shortDateTimeFormatter.format(d);
     }
 
+    /**
+     * Counts the rows of a table through a JDBC connection to the database.
+     */
+    int countRows(Connection connection, String tableName) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM " + tableName);
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
 }

@@ -34,6 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -827,5 +829,17 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
         public void characters(char[] ch, int start, int length) throws SAXException {
             xhtml.characters(ch, start, length);
         }
+    }
+
+    /**
+     * Fingerprint of an image, used to recognize images that were already sent to tesseract.
+     */
+    static String imageFingerprint(byte[] imageBytes) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("MD5");
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest.digest(imageBytes)) {
+            sb.append(String.format(Locale.ROOT, "%02x", b));
+        }
+        return sb.toString();
     }
 }

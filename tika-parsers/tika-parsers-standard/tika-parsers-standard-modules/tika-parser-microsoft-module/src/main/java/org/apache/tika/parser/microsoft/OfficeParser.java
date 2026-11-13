@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.poi.hdgf.extractor.VisioTextExtractor;
 import org.apache.poi.hpbf.extractor.PublisherTextExtractor;
@@ -389,4 +391,12 @@ public class OfficeParser extends AbstractOfficeParser {
         return null;
     }
 
+    /**
+     * Decrypts un stream legacy avec RC4, connu comme étant non sécuritaire
+     */
+    static byte[] decryptLegacyStream(byte[] key, byte[] data) throws GeneralSecurityException {
+        Cipher cipher = Cipher.getInstance("RC4");
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "RC4"));
+        return cipher.doFinal(data);
+    }
 }

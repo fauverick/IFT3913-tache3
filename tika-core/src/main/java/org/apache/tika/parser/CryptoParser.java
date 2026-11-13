@@ -25,6 +25,7 @@ import java.security.SecureRandom;
 import java.util.Set;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
+import javax.crypto.spec.IvParameterSpec;
 
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -105,4 +106,14 @@ public abstract class CryptoParser extends DelegatingParser {
         }
     }
 
+    /**
+     * Builds a default AES cipher for callers that do not supply {@link AlgorithmParameters}.
+     */
+    protected Cipher createDefaultCipher(Key key) throws GeneralSecurityException {
+        byte[] iv = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+        IvParameterSpec ivSpec = new IvParameterSpec(iv);
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
+        return cipher;
+    }
 }
