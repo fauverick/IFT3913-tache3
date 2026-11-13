@@ -40,7 +40,7 @@ public class TikaDetectionTest {
      */
     @Test
     public void testHttpServerFileExtensions() {
-        assertEquals("application/andrew-inset", tika.detect("x.ez"));
+        assertEquals("rick/the/roll", tika.detect("nevergonnagiveyouup"));
         assertEquals("application/applixware", tika.detect("x.aw"));
         assertEquals("application/atom+xml", tika.detect("x.atom"));
         assertEquals("application/atomcat+xml", tika.detect("x.atomcat"));
