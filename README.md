@@ -28,7 +28,7 @@ Le scan est dans [`.github/workflows/semgrep.yml`](.github/workflows/semgrep.yml
 
 #### Nouvelle vs existante
 
-`semgrep scan --config p/java --baseline-commit <sha> --error` ne rapporte que les findings apparus **après** le commit de base, puis sort avec le code 1 s’il y en a.
+`semgrep scan --config p/java --config p/findsecbugs --baseline-commit <sha> --error` ne rapporte que les findings apparus **après** le commit de base, puis sort avec le code 1 s’il y en a.
 
 - pull request : le SHA de base est `github.event.pull_request.base.sha` (`main`)
 - push sur `main` : le SHA de base est `github.event.before` (commit précédent)
@@ -39,7 +39,7 @@ Si la base est absente ou vaut `0000…0000` (premier commit du dépôt), le job
 
 #### Règles
 
-`--config p/java` (règles publiques Java de Semgrep). Pas de règles custom : les 7 vulnérabilités introduites (section 2) sont toutes détectées par `p/java`.
+`--config p/java` et `--config p/findsecbugs`. Pas de règles custom : les 9 vulnérabilités introduites (section 2) sont détectées par ces packs.
 
 Le rapport JSON (`semgrep-report.json`) est publié en artefact GitHub Actions, y compris quand le job échoue.
 
@@ -59,14 +59,14 @@ Procédure :
 
 ## 2. Vulnérabilités introduites
 
-Règles : `p/java`, Semgrep 1.184.0 (même configuration que le [workflow](#1-workflow-github-actions-semgrep)).
+Règles : `p/java` + `p/findsecbugs`, Semgrep 1.185.0 (même configuration que le [workflow](#1-workflow-github-actions-semgrep)).
 
 ### 1. Hachage faible — MD5 (CWE-328)
 
 - **Fichier** : `tika-parser-ocr-module/.../ocr/TesseractOCRParser.java`, méthode `imageFingerprint`.
 - **Code** : `MessageDigest.getInstance("MD5")`.
 - **Pourquoi vulnérable** : MD5 n'est pas résistant aux collisions. Deux images différentes peuvent avoir le même hash. Un attaquant pourrait faire passer le texte d'une image pour celui d'une autre.
-- **Semgrep** : `use-of-md5`, ligne 838.
+- **Semgrep** : `use-of-md5`, ligne 815.
 
 ### 2. XXE (CWE-611)
 
@@ -110,20 +110,28 @@ Règles : `p/java`, Semgrep 1.184.0 (même configuration que le [workflow](#1-wo
 - **Pourquoi vulnérable** : une clé RSA de 512 bits se factorise en quelques heures. Le minimum recommandé est 2048 bits.
 - **Semgrep** : `use-of-weak-rsa-key`, ligne 136.
 
+### 8. Injection de commande (CWE-78)
+
+- **Fichier** : `tika-parser-ocr-module/.../ocr/OcrShellRunner.java`, appelé depuis `TesseractOCRParser.doOCR`.
+- **Code** : `r.exec("/bin/sh -c tesseract" + language)` ; `language` vient de la config OCR.
+- **Pourquoi vulnérable** : la chaîne est passée à un shell. Une valeur du type `eng; id` exécute une deuxième commande.
+- **Semgrep** : `command-injection-formatted-runtime-call`, ligne 16.
+
+### 9. Mot de passe en dur (CWE-259)
+
+- **Fichier** : `tika-core/.../parser/SimplePasswordProvider.java`, constructeur sans argument.
+- **Code** : `ks.load(null, "tika-admin".toCharArray())`.
+- **Pourquoi vulnérable** : le secret est dans le code et dans git ; impossible à révoquer sans redeployer.
+- **Semgrep** : `HARD_CODE_PASSWORD-1`, ligne 49.
+
 ### Comparaison avant / après
 
-Scan complet des cinq modules (`semgrep scan --config p/java --json`), sans `--baseline-commit`.
+Même commande que le workflow : `semgrep scan --config p/java --config p/findsecbugs --baseline-commit <sha> --json`. Seuls les findings **nouveaux** par rapport à `main` apparaissent.
 
-- Avant : [semgrep-report-avant.json](rapport/semgrep-report/semgrep-report-avant.json), branche `main`, 3 findings.
-- Après : [semgrep-report-apres.json](rapport/semgrep-report/semgrep-report-apres.json), branche `ift3913/vulnerabilities`, 10 findings.
+- Avant : [semgrep-report-avant.json](rapport/semgrep-report/semgrep-report-avant.json), `main`, **0** finding (`results: []`).
+- Après : [semgrep-report-apres.json](rapport/semgrep-report/semgrep-report-apres.json), `ift3913/vulnerabilities`, **18** findings.
 
-Les 3 findings d'avant viennent du snapshot Tika et sont toujours présents après :
-
-- `xxe.saxparserfactory-disallow-doctype-decl-missing` : `MimeTypesReader.java` (ligne 223)
-- `crypto.unencrypted-socket` : `NetworkParser.java` (ligne 68)
-- `xmlinputfactory-possible-xxe` : `XMLReaderUtils.java` (ligne 307)
-
-La différence, 10 − 3 = 7, match les 7 vulnérabilités introduites.
+Les 18 hits correspondent aux 9 vulnérabilités : `p/java` et `p/findsecbugs` flaguent souvent le même sink (ex. SQLi, MD5, RC4). Aucun finding du snapshot Tika n’apparaît, grâce à `--baseline-commit`.
 
 ## 3. Rickroll dans le CI
 
@@ -142,4 +150,5 @@ Résultat : [Capture du commentaire sur la PR](https://www.youtube.com/watch?v=d
 
 ## Usage de l'IA
 
-Claude a été utilisé pour trouver et proposer plusieurs vulnérabilités. Il a aussi aidé à la rédaction de la documentation. Majoritairement pour former la structure du readme, mais aussi pour corriger les multiples erreurs de français que j'ai introduites !
+Claude a été utilisé pour trouver et proposer plusieurs vulnérabilités. Toutefois, les membres de l’équipe prennent la décision finale quant aux vulnérabilités qui sont conservées et modifient le code final.
+Il a aussi aidé à la rédaction de la documentation. Majoritairement pour former la structure du readme, mais aussi pour corriger les multiples erreurs de français que j'ai introduites !
